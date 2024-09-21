@@ -13,7 +13,6 @@ retirement_year = st.number_input("Enter the year you both plan to retire", min_
 monthly_income = st.number_input("Enter your combined monthly income after tax", min_value=0.0)
 monthly_expenses = st.number_input("Enter your combined monthly expenses", min_value=0.0)
 rate_of_return = st.number_input("Rate of return or interest rate (%) for retirement funds", min_value=0.0, max_value=100.0, value=5.0)
-st.write("Note: The rate of return refers to the growth of your money based on where it's invested. For instance, if you plan to invest your retirement savings in the stock market, the average rate of return is typically around 6-7%. For a high-interest savings account, the interest rate usually ranges from 2-5%. However, if you're aware of the specific interest rate offered by your bank, use that figure.")
 
 # Initialize goal list
 if 'goals' not in st.session_state:
@@ -63,7 +62,6 @@ with st.expander("Add a Goal"):
             })
 
             st.success(f"Goal '{goal_name}' added successfully.")
-            st.session_state.plot_updated = False  # Flag to update the plot
         else:
             st.error("Please enter a valid goal name and amount.")
 
@@ -98,11 +96,8 @@ def calculate_retirement_net_worth_with_goals():
 
 # Plot timeline
 def plot_timeline():
-    if 'plot_updated' in st.session_state and st.session_state.plot_updated:
-        return
-    
     current_year = date.today().year
-    
+
     # Create timeline data
     timeline_data = {
         'Year': [current_year, retirement_year] + [goal['target_year'] for goal in st.session_state.goals],
@@ -164,7 +159,6 @@ if st.sidebar.button("Remove Goal"):
     if goal_to_remove:
         st.session_state.goals = [goal for goal in st.session_state.goals if goal['goal_name'] != goal_to_remove]
         st.sidebar.success(f"Goal '{goal_to_remove}' removed successfully.")
-        st.session_state.plot_updated = False
 
 # Calculate and display net worth
 st.header("Retirement Net Worth")
@@ -234,6 +228,10 @@ if selected_year:
 
     st.subheader(f"Financial Snapshot for {selected_year}")
     for key, value in snapshot.items():
-        st.write(f"### {key}")
-        for metric, amount in value.items():
-            st.write(f"- **{metric}:** ${amount:,.2f}" if "Amount" in metric else f"- **{metric}:** {amount:.2f}%")
+        if isinstance(value, dict):
+            st.write(f"### {key}")
+            for metric, amount in value.items():
+                st.write(f"- **{metric}:** ${amount:,.2f}" if "Amount" in metric else f"- **{metric}:** {amount:.2f}%")
+        else:
+            st.write(f"### {key}: ${value:,.2f}" if "Amount" in key else f"### {key}: {value:.2f}")
+
