@@ -174,9 +174,6 @@ selected_year = st.number_input("Enter a year to view financial snapshot", min_v
 
 # Button to show snapshot
 if st.button("Show Snapshot"):
-    # Plot the timeline with snapshot year
-    plot_timeline(snapshot_year=selected_year)
-
     # Calculate financial snapshot
     def calculate_financial_snapshot(year):
         monthly_savings = monthly_income - monthly_expenses
