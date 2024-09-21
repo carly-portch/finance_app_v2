@@ -2,7 +2,9 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from datetime import date, ceil
+from datetime import date
+from math import ceil
+
 
 st.title("Plan Your Future Together")
 st.write("This tool helps you and your partner estimate your retirement savings and manage joint medium- and long-term goals.")
