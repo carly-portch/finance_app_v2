@@ -3,7 +3,6 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 from datetime import date
-from math import ceil
 
 st.title("Plan Your Future Together")
 st.write("This tool helps you and your partner estimate your retirement savings and manage joint medium- and long-term goals.")
@@ -97,7 +96,7 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline(selected_year):
+def plot_timeline(snapshot_year=None):
     current_year = date.today().year
     
     # Create timeline data
@@ -138,9 +137,9 @@ def plot_timeline(selected_year):
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year
-    if 'snapshot_year' in st.session_state:
-        fig.add_vline(x=st.session_state.snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add a vertical line for the selected snapshot year if provided
+    if snapshot_year is not None:
+        fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -168,32 +167,35 @@ if st.sidebar.button("Remove Goal"):
 
 # Calculate and display the financial snapshot
 snapshot_year_input = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
-
 if st.button("Show Snapshot"):
+    st.session_state.snapshot_year = snapshot_year_input
     st.markdown("### Financial Snapshot")
     
-    current_retirement_savings = calculate_retirement_net_worth_with_goals()
-    total_retirement_goal = sum(goal['goal_amount'] for goal in st.session_state.goals)  # Total retirement goal from all goals
-    
-    # Ensure all dollar amounts are rounded up and in the correct format
-    rounded_current_savings = ceil(current_retirement_savings)
-    rounded_total_goal = ceil(total_retirement_goal)
-    
-    # Calculate progress for the retirement savings
-    progress_retirement = min(100, (rounded_current_savings / rounded_total_goal) * 100) if rounded_total_goal > 0 else 100
-    
-    st.markdown("#### Current Monthly Financials")
-    st.write(f"${ceil(monthly_income)}")
-    st.write(f"${ceil(monthly_expenses)}")
-    
-    st.markdown("#### Goals Progress")
+    # Calculate contributions and retirement savings
+    contributions = monthly_income - monthly_expenses
     for goal in st.session_state.goals:
-        goal_savings = goal['goal_amount']  # Current savings for the goal
-        progress_goal = min(100, (goal_savings / goal['goal_amount']) * 100) if goal['goal_amount'] > 0 else 100
-        st.progress(progress_goal, text=f"{goal['goal_name']}: ${rounded_goal_savings} / ${goal['goal_amount']}")
+        contributions -= goal['monthly_contribution']
     
-    st.markdown("#### Retirement Progress")
-    st.progress(progress_retirement, text=f"Retirement Savings: ${rounded_current_savings} / ${rounded_total_goal}")
+    retirement_net_worth = calculate_retirement_net_worth_with_goals()
+    
+    # Create a summary without headers
+    st.markdown(f"${int(monthly_income)}")
+    st.markdown(f"${int(monthly_expenses)}")
+    for goal in st.session_state.goals:
+        st.markdown(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
+    st.markdown(f"To Retirement: ${int(contributions)}")
 
-    # Plot the timeline
-    plot_timeline(snapshot_year_input)
+    st.write("#### Goals")
+    total_retirement_savings = 0
+    for goal in st.session_state.goals:
+        saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year_input - current_year) * 12)
+        total_retirement_savings += saved_amount
+        progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
+        st.write(f"- {goal['goal_name']}: ${int(saved_amount)} saved ({progress:.0%} complete)")
+        st.progress(progress)
+
+    st.write("#### Retirement Savings")
+    st.write(f"${int(retirement_net_worth + total_retirement_savings):,}")
+
+# Plot timeline with the current state
+plot_timeline(st.session_state.get("snapshot_year"))
