@@ -104,10 +104,10 @@ def plot_timeline(snapshot_year=None):
         'Year': [current_year, retirement_year] + [goal['target_year'] for goal in st.session_state.goals],
         'Event': ['Current Year', 'Retirement Year'] + [goal['goal_name'] for goal in st.session_state.goals],
         'Text': [
-            f"<b>Current Year:</b> {current_year}<br><b>Combined Monthly Income:</b> ${monthly_income:,.2f}<br><b>Monthly Expenses:</b> ${monthly_expenses:,.2f}<br><b>Amount Going Towards Retirement:</b> ${monthly_income - monthly_expenses - sum(goal['monthly_contribution'] for goal in st.session_state.goals):,.2f}",
-            f"<b>Retirement Year:</b> {retirement_year}<br><b>Net Worth at Retirement:</b> ${calculate_retirement_net_worth_with_goals():,.2f}"
+            f"<b>Current Year:</b> {current_year}<br><b>Combined Monthly Income:</b> ${int(monthly_income)}<br><b>Monthly Expenses:</b> ${int(monthly_expenses)}<br><b>Amount Going Towards Retirement:</b> ${int(monthly_income - monthly_expenses - sum(goal['monthly_contribution'] for goal in st.session_state.goals))}",
+            f"<b>Retirement Year:</b> {retirement_year}<br><b>Net Worth at Retirement:</b> ${int(calculate_retirement_net_worth_with_goals())}"
         ] + [
-            f"<b>Goal:</b> {goal['goal_name']}<br><b>Amount:</b> ${goal['goal_amount']:.2f}<br><b>Monthly Contribution:</b> ${goal['monthly_contribution']:.2f}"
+            f"<b>Goal:</b> {goal['goal_name']}<br><b>Amount:</b> ${int(goal['goal_amount'])}<br><b>Monthly Contribution:</b> ${int(goal['monthly_contribution'])}"
             for goal in st.session_state.goals
         ]
     }
@@ -179,21 +179,23 @@ if st.button("Show Snapshot"):
     retirement_net_worth = calculate_retirement_net_worth_with_goals()
     
     # Create a summary without headers
-    st.markdown(f"${monthly_income:,.2f}")
-    st.markdown(f"${monthly_expenses:,.2f}")
+    st.markdown(f"${int(monthly_income)}")
+    st.markdown(f"${int(monthly_expenses)}")
     for goal in st.session_state.goals:
-        st.markdown(f"- {goal['goal_name']}: ${goal['monthly_contribution']:.2f}")
-    st.markdown(f"To Retirement: ${contributions:.2f}")
+        st.markdown(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
+    st.markdown(f"To Retirement: ${int(contributions)}")
 
     st.write("#### Goals")
+    total_retirement_savings = 0
     for goal in st.session_state.goals:
         saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year_input - current_year) * 12)
+        total_retirement_savings += saved_amount
         progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
-        st.write(f"- {goal['goal_name']}: ${saved_amount:.2f} saved ({progress:.0%} complete)")
+        st.write(f"- {goal['goal_name']}: ${int(saved_amount)} saved ({progress:.0%} complete)")
         st.progress(progress)
 
     st.write("#### Retirement Savings")
-    st.write(f"${retirement_net_worth:,.2f}")
+    st.write(f"${int(retirement_net_worth + total_retirement_savings):,}")
 
-# Plot timeline with current state
+# Plot timeline with the current state
 plot_timeline(st.session_state.get("snapshot_year"))
