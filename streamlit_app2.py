@@ -6,13 +6,9 @@ from datetime import date
 
 st.title("Plan Your Future Together")
 st.write("This tool helps you and your partner estimate your retirement savings and manage joint medium- and long-term goals.")
-st.write("To get started, please fill out the fields below. You can add any medium- or long-term goals you both want to save for, such as a down payment on a house, children's education, or a dream vacation. Specify your goal either by entering the target year for achieving it or by providing your desired monthly contribution, and we’ll calculate when the goal will be reached. Once you've set a goal, click 'Add goal to timeline,' and it will appear in the timeline below. If you wish to remove a goal, use the left-side panel.")
-
-# Initialize variables
-current_year = date.today().year
 
 # Input fields for retirement calculation
-retirement_year = st.number_input("Enter the year you both plan to retire", min_value=current_year + 1)
+retirement_year = st.number_input("Enter the year you both plan to retire", min_value=date.today().year + 1)
 monthly_income = st.number_input("Enter your combined monthly income after tax", min_value=0.0)
 monthly_expenses = st.number_input("Enter your combined monthly expenses", min_value=0.0)
 rate_of_return = st.number_input("Rate of return or interest rate (%) for retirement funds", min_value=0.0, max_value=100.0, value=5.0)
@@ -21,7 +17,7 @@ rate_of_return = st.number_input("Rate of return or interest rate (%) for retire
 if 'goals' not in st.session_state:
     st.session_state.goals = []
 
-# Display goal addition dropdown
+# Display goal addition section
 with st.expander("Add a Goal"):
     goal_name = st.text_input("Name of goal")
     goal_amount = st.number_input("Goal amount", min_value=0.0)
@@ -34,11 +30,11 @@ with st.expander("Add a Goal"):
             rate_of_return_monthly = interest_rate / 100 / 12
             if rate_of_return_monthly > 0:
                 months_to_goal = np.log(1 + (goal_amount * rate_of_return_monthly) / contribution_amount) / np.log(1 + rate_of_return_monthly)
-                target_year = current_year + int(np.ceil(months_to_goal / 12))
+                target_year = date.today().year + int(np.ceil(months_to_goal / 12))
             else:
-                target_year = current_year + int(goal_amount / contribution_amount // 12)
+                target_year = date.today().year + int(goal_amount / contribution_amount // 12)
     elif goal_type == "Target Year":
-        target_year = st.number_input("Target year to reach this goal (yyyy)", min_value=current_year)
+        target_year = st.number_input("Target year to reach this goal (yyyy)", min_value=date.today().year)
         contribution_amount = None
 
     # Add goal button
@@ -47,12 +43,14 @@ with st.expander("Add a Goal"):
             if goal_type == "Monthly Contribution":
                 target_year = int(target_year)
             elif goal_type == "Target Year":
-                months_to_goal = 12 * (target_year - current_year)
+                months_to_goal = 12 * (target_year - date.today().year)
                 rate_of_return_monthly = interest_rate / 100 / 12
                 if rate_of_return_monthly > 0:
                     monthly_contribution = goal_amount * rate_of_return_monthly / ((1 + rate_of_return_monthly) ** months_to_goal - 1)
                 else:
                     monthly_contribution = goal_amount / months_to_goal
+            else:
+                monthly_contribution = 0
 
             # Append goal to session state
             st.session_state.goals.append({
@@ -69,7 +67,7 @@ with st.expander("Add a Goal"):
 # Function to calculate retirement net worth without goals
 def calculate_retirement_net_worth_without_goals():
     monthly_savings = monthly_income - monthly_expenses
-    months_to_retirement = (retirement_year - current_year) * 12
+    months_to_retirement = (retirement_year - date.today().year) * 12
     rate_of_return_monthly = rate_of_return / 100 / 12
 
     if rate_of_return_monthly > 0:
@@ -85,7 +83,7 @@ def calculate_retirement_net_worth_with_goals():
     for goal in st.session_state.goals:
         remaining_contributions -= goal['monthly_contribution']
 
-    months_to_retirement = (retirement_year - current_year) * 12
+    months_to_retirement = (retirement_year - date.today().year) * 12
     rate_of_return_monthly = rate_of_return / 100 / 12
 
     if rate_of_return_monthly > 0:
@@ -96,7 +94,7 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline(selected_year):
+def plot_timeline(snapshot_year=None):
     current_year = date.today().year
     
     # Create timeline data
@@ -137,8 +135,13 @@ def plot_timeline(selected_year):
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year
-    fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add vertical line for snapshot year if provided
+    if snapshot_year:
+        fig.add_shape(
+            type="line",
+            x0=snapshot_year, y0=-0.1, x1=snapshot_year, y1=0.1,
+            line=dict(color="blue", width=2),
+        )
     
     # Update layout
     fig.update_layout(
@@ -164,42 +167,42 @@ if st.sidebar.button("Remove Goal"):
         st.session_state.goals = [goal for goal in st.session_state.goals if goal['goal_name'] != goal_to_remove]
         st.sidebar.success(f"Goal '{goal_to_remove}' removed successfully.")
 
-# Calculate and display the financial snapshot
-snapshot_year = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
+# Calculate and display net worth
+net_worth = calculate_retirement_net_worth_with_goals()
+st.header("Retirement Net Worth")
+st.write(f"Your estimated net worth at retirement is **${net_worth:,.2f}**.")
 
+# Display timeline
+plot_timeline()
+
+# Input field for selecting a year for financial snapshot
+snapshot_year = st.number_input("Enter a year to view financial snapshot", min_value=date.today().year, max_value=retirement_year)
 if st.button("Show Snapshot"):
-    st.markdown("### Financial Snapshot")
-    
-    # Calculate contributions and retirement savings
-    contributions = monthly_income - monthly_expenses
-    for goal in st.session_state.goals:
-        contributions -= goal['monthly_contribution']
-    
-    retirement_net_worth = calculate_retirement_net_worth_with_goals()
-    
-    # Create a summary table
-    st.write("#### Current Monthly Income")
-    st.write(f"${monthly_income:,.2f}")
-
-    st.write("#### Current Monthly Expenses")
-    st.write(f"${monthly_expenses:,.2f}")
-
-    st.write("#### Contributions")
-    st.write("**To Goals:**")
-    for goal in st.session_state.goals:
-        st.write(f"- {goal['goal_name']}: ${goal['monthly_contribution']:.2f}")
-
-    st.write(f"**To Retirement:** ${contributions:.2f}")
-
-    st.write("#### Goals")
-    for goal in st.session_state.goals:
-        saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year - current_year) * 12)
-        progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
-        st.write(f"- {goal['goal_name']}: ${saved_amount:.2f} saved ({progress:.0%} complete)")
-        st.progress(progress)
-
-    st.write("#### Retirement Savings")
-    st.write(f"${retirement_net_worth:,.2f}")
-
-    # Plot timeline with the selected snapshot year
+    # Update timeline with vertical line for the snapshot year
     plot_timeline(snapshot_year)
+
+    # Display financial snapshot
+    st.subheader("Financial Snapshot")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("**Current Monthly Income**: ${:,.2f}".format(monthly_income))
+        st.write("**Monthly Expenses**: ${:,.2f}".format(monthly_expenses))
+        st.write("**Contributions to Goals**:")
+        for goal in st.session_state.goals:
+            st.write(f"- {goal['goal_name']}: ${goal['monthly_contribution']:.2f}")
+
+    with col2:
+        st.write("**Contribution to Retirement**: ${:,.2f}".format(monthly_income - monthly_expenses - sum(goal['monthly_contribution'] for goal in st.session_state.goals)))
+        st.write("**Current Retirement Savings**: ${:,.2f}".format(net_worth))
+
+    # Goals section with progress bars
+    st.subheader("Goals Progress")
+    for goal in st.session_state.goals:
+        st.write(f"{goal['goal_name']} - Amount Saved: ${goal['goal_amount']:.2f}")
+        progress = (goal['goal_amount'] / goal['goal_amount']) * 100  # Dummy progress calculation for demonstration
+        st.progress(progress / 100)
+
+    # Retirement section
+    st.subheader("Retirement Savings")
+    st.write(f"Total Saved for Retirement: ${net_worth:.2f}")
