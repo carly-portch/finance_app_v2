@@ -5,7 +5,6 @@ import numpy as np
 from datetime import date
 from math import ceil
 
-
 st.title("Plan Your Future Together")
 st.write("This tool helps you and your partner estimate your retirement savings and manage joint medium- and long-term goals.")
 st.write("To get started, please fill out the fields below. You can add any medium- or long-term goals you both want to save for, such as a down payment on a house, children's education, or a dream vacation. Specify your goal either by entering the target year for achieving it or by providing your desired monthly contribution, and we’ll calculate when the goal will be reached. Once you've set a goal, click 'Add goal to timeline,' and it will appear in the timeline below. If you wish to remove a goal, use the left-side panel.")
@@ -140,7 +139,8 @@ def plot_timeline(selected_year):
     ))
 
     # Add a vertical line for the selected snapshot year
-    fig.add_vline(x=selected_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    if 'snapshot_year' in st.session_state:
+        fig.add_vline(x=st.session_state.snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -172,36 +172,28 @@ snapshot_year_input = st.number_input("Enter a year to view financial snapshot",
 if st.button("Show Snapshot"):
     st.markdown("### Financial Snapshot")
     
-    # Calculate contributions and retirement savings
-    contributions = monthly_income - monthly_expenses
-    for goal in st.session_state.goals:
-        contributions -= goal['monthly_contribution']
+    current_retirement_savings = calculate_retirement_net_worth_with_goals()
+    total_retirement_goal = sum(goal['goal_amount'] for goal in st.session_state.goals)  # Total retirement goal from all goals
     
-    retirement_net_worth = calculate_retirement_net_worth_with_goals()
+    # Ensure all dollar amounts are rounded up and in the correct format
+    rounded_current_savings = ceil(current_retirement_savings)
+    rounded_total_goal = ceil(total_retirement_goal)
     
-    # Create a summary table
-    st.write(f"Monthly income: ${int(monthly_income)}")
-    st.write(f"Monthly expenses: ${int(monthly_expenses)}")
+    # Calculate progress for the retirement savings
+    progress_retirement = min(100, (rounded_current_savings / rounded_total_goal) * 100) if rounded_total_goal > 0 else 100
     
-    st.write(f"Contributions:")
+    st.markdown("#### Current Monthly Financials")
+    st.write(f"${ceil(monthly_income)}")
+    st.write(f"${ceil(monthly_expenses)}")
+    
+    st.markdown("#### Goals Progress")
     for goal in st.session_state.goals:
-        st.write(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
+        goal_savings = goal['goal_amount']  # Current savings for the goal
+        progress_goal = min(100, (goal_savings / goal['goal_amount']) * 100) if goal['goal_amount'] > 0 else 100
+        st.progress(progress_goal, text=f"{goal['goal_name']}: ${rounded_goal_savings} / ${goal['goal_amount']}")
+    
+    st.markdown("#### Retirement Progress")
+    st.progress(progress_retirement, text=f"Retirement Savings: ${rounded_current_savings} / ${rounded_total_goal}")
 
-    st.write(f"Retirement: ${int(contributions)}")
-
-    st.write("#### Goals")
-    for goal in st.session_state.goals:
-        saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year_input - current_year) * 12)
-        saved_amount = int(np.ceil(saved_amount))
-        progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
-        st.write(f"- {goal['goal_name']}: ${saved_amount} saved ({int(progress * 100)}% complete)")
-        st.progress(progress)
-
-    saved_retirement_amount = int(np.ceil(retirement_net_worth))
-    total_retirement_amount = (monthly_income - monthly_expenses) * ((retirement_year - current_year) * 12)
-    progress_retirement = saved_retirement_amount / total_retirement_amount if total_retirement_amount > 0 else 0
-    st.write(f"#### Retirement Savings: {saved_retirement_amount} saved out of {int(np.ceil(total_retirement_amount))}")
-    st.progress(progress_retirement)
-
-    # Plot timeline with the selected snapshot year
+    # Plot the timeline
     plot_timeline(snapshot_year_input)
