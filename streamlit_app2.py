@@ -228,4 +228,12 @@ def calculate_financial_snapshot(year):
 
     return snapshot
 
+# Calculate and display the financial snapshot for the selected year
+if selected_year:
+    snapshot = calculate_financial_snapshot(selected_year)
 
+    st.subheader(f"Financial Snapshot for {selected_year}")
+    for key, value in snapshot.items():
+        st.write(f"### {key}")
+        for metric, amount in value.items():
+            st.write(f"- **{metric}:** ${amount:,.2f}" if "Amount" in metric else f"- **{metric}:** {amount:.2f}%")
