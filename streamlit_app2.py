@@ -2,7 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from datetime import date
+from datetime import date, ceil
 
 st.title("Plan Your Future Together")
 st.write("This tool helps you and your partner estimate your retirement savings and manage joint medium- and long-term goals.")
@@ -96,7 +96,7 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline(snapshot_year=None):
+def plot_timeline(selected_year):
     current_year = date.today().year
     
     # Create timeline data
@@ -137,9 +137,8 @@ def plot_timeline(snapshot_year=None):
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year if provided
-    if snapshot_year is not None:
-        fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add a vertical line for the selected snapshot year
+    fig.add_vline(x=selected_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -167,8 +166,8 @@ if st.sidebar.button("Remove Goal"):
 
 # Calculate and display the financial snapshot
 snapshot_year_input = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
+
 if st.button("Show Snapshot"):
-    st.session_state.snapshot_year = snapshot_year_input
     st.markdown("### Financial Snapshot")
     
     # Calculate contributions and retirement savings
@@ -178,24 +177,29 @@ if st.button("Show Snapshot"):
     
     retirement_net_worth = calculate_retirement_net_worth_with_goals()
     
-    # Create a summary without headers
-    st.markdown(f"${int(monthly_income)}")
-    st.markdown(f"${int(monthly_expenses)}")
+    # Create a summary table
+    st.write(f"- Monthly income: ${int(monthly_income)}")
+    st.write(f"- Monthly expenses: ${int(monthly_expenses)}")
+    
+    st.write(f"Contributions:")
     for goal in st.session_state.goals:
-        st.markdown(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
-    st.markdown(f"To Retirement: ${int(contributions)}")
+        st.write(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
+
+    st.write(f"- Retirement: ${int(contributions)}")
 
     st.write("#### Goals")
-    total_retirement_savings = 0
     for goal in st.session_state.goals:
         saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year_input - current_year) * 12)
-        total_retirement_savings += saved_amount
+        saved_amount = int(np.ceil(saved_amount))
         progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
-        st.write(f"- {goal['goal_name']}: ${int(saved_amount)} saved ({progress:.0%} complete)")
+        st.write(f"- {goal['goal_name']}: ${saved_amount} saved ({int(progress * 100)}% complete)")
         st.progress(progress)
 
-    st.write("#### Retirement Savings")
-    st.write(f"${int(retirement_net_worth + total_retirement_savings):,}")
+    saved_retirement_amount = int(np.ceil(retirement_net_worth))
+    total_retirement_amount = (monthly_income - monthly_expenses) * ((retirement_year - current_year) * 12)
+    progress_retirement = saved_retirement_amount / total_retirement_amount if total_retirement_amount > 0 else 0
+    st.write(f"#### Retirement Savings: {saved_retirement_amount} saved out of {int(np.ceil(total_retirement_amount))}")
+    st.progress(progress_retirement)
 
-# Plot timeline with the current state
-plot_timeline(st.session_state.get("snapshot_year"))
+    # Plot timeline with the selected snapshot year
+    plot_timeline(snapshot_year_input)
