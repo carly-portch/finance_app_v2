@@ -173,3 +173,60 @@ st.write(f"Your estimated net worth at retirement is **${net_worth:,.2f}**.")
 
 # Display timeline
 plot_timeline()
+
+# Input field for selecting a year for financial snapshot
+selected_year = st.number_input("Enter a year to get a financial snapshot", min_value=date.today().year, max_value=retirement_year, value=date.today().year)
+
+# Function to calculate the snapshot of finances in a given year
+def calculate_financial_snapshot(year):
+    snapshot = {}
+    
+    # Calculate how much has been saved for each goal by the selected year
+    for goal in st.session_state.goals:
+        if year >= goal['target_year']:  # Goal already reached
+            saved_for_goal = goal['goal_amount']
+            percent_saved = 100
+        else:  # Goal still ongoing
+            years_to_goal = goal['target_year'] - date.today().year
+            months_to_goal = years_to_goal * 12
+            months_elapsed = (year - date.today().year) * 12
+            saved_for_goal = min(goal['goal_amount'], goal['monthly_contribution'] * months_elapsed)
+            percent_saved = (saved_for_goal / goal['goal_amount']) * 100
+        
+        snapshot[goal['goal_name']] = {
+            'Saved Amount ($)': saved_for_goal,
+            'Saved (%)': percent_saved
+        }
+    
+    # Calculate retirement savings up to the selected year
+    remaining_contributions = monthly_income - monthly_expenses - sum(goal['monthly_contribution'] for goal in st.session_state.goals)
+    years_elapsed = year - date.today().year
+    months_elapsed = years_elapsed * 12
+    rate_of_return_monthly = rate_of_return / 100 / 12
+
+    if rate_of_return_monthly > 0:
+        retirement_savings = remaining_contributions * ((1 + rate_of_return_monthly) ** months_elapsed - 1) / rate_of_return_monthly
+    else:
+        retirement_savings = remaining_contributions * months_elapsed
+
+    snapshot['Retirement'] = {
+        'Saved Amount ($)': retirement_savings,
+        'Saved (%)': (retirement_savings / calculate_retirement_net_worth_without_goals()) * 100
+    }
+
+    snapshot['Monthly Income'] = monthly_income
+    snapshot['Monthly Expenses'] = monthly_expenses
+    snapshot['Monthly Contributions to Goals'] = sum(goal['monthly_contribution'] for goal in st.session_state.goals)
+    snapshot['Monthly Contributions to Retirement'] = remaining_contributions
+
+    return snapshot
+
+# Display the financial snapshot table
+if selected_year:
+    snapshot = calculate_financial_snapshot(selected_year)
+    st.subheader(f"Financial Snapshot for the Year {selected_year}")
+    
+    # Convert the snapshot dictionary to a DataFrame for better display
+    snapshot_df = pd.DataFrame(snapshot).T
+    st.table(snapshot_df)
+
