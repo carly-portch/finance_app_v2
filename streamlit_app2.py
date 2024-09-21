@@ -174,9 +174,10 @@ selected_year = st.number_input("Enter a year to view financial snapshot", min_v
 
 # Button to show snapshot
 if st.button("Show Snapshot"):
+    # Plot the timeline with snapshot year
     plot_timeline(snapshot_year=selected_year)
 
-    # Function to calculate the snapshot of finances in a given year
+    # Calculate financial snapshot
     def calculate_financial_snapshot(year):
         monthly_savings = monthly_income - monthly_expenses
         goal_snapshots = {}
@@ -218,4 +219,3 @@ if st.button("Show Snapshot"):
 
     st.subheader("Retirement Savings")
     st.write(f"Current Retirement Savings: ${snapshot_data['retirement_savings']:.2f}")
-
