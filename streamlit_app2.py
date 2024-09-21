@@ -20,6 +20,8 @@ rate_of_return = st.number_input("Rate of return or interest rate (%) for retire
 # Initialize goal list
 if 'goals' not in st.session_state:
     st.session_state.goals = []
+if 'snapshot_year' not in st.session_state:
+    st.session_state.snapshot_year = None
 
 # Display goal addition dropdown
 with st.expander("Add a Goal"):
@@ -96,10 +98,7 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline(snapshot_year=None):
-    current_year = date.today().year
-    
-    # Create timeline data
+def plot_timeline():
     timeline_data = {
         'Year': [current_year, retirement_year] + [goal['target_year'] for goal in st.session_state.goals],
         'Event': ['Current Year', 'Retirement Year'] + [goal['goal_name'] for goal in st.session_state.goals],
@@ -137,9 +136,9 @@ def plot_timeline(snapshot_year=None):
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year if provided
-    if snapshot_year is not None:
-        fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add a vertical line for the selected snapshot year if it exists
+    if st.session_state.snapshot_year is not None:
+        fig.add_vline(x=st.session_state.snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -166,12 +165,9 @@ if st.sidebar.button("Remove Goal"):
         st.sidebar.success(f"Goal '{goal_to_remove}' removed successfully.")
 
 # Calculate and display the financial snapshot
-snapshot_year = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
-
-# Plot timeline without the snapshot line initially
-plot_timeline()
-
+snapshot_year_input = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
 if st.button("Show Snapshot"):
+    st.session_state.snapshot_year = snapshot_year_input
     st.markdown("### Financial Snapshot")
     
     # Calculate contributions and retirement savings
@@ -197,7 +193,7 @@ if st.button("Show Snapshot"):
 
     st.write("#### Goals")
     for goal in st.session_state.goals:
-        saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year - current_year) * 12)
+        saved_amount = min(goal['goal_amount'], goal['monthly_contribution'] * (snapshot_year_input - current_year) * 12)
         progress = saved_amount / goal['goal_amount'] if goal['goal_amount'] > 0 else 0
         st.write(f"- {goal['goal_name']}: ${saved_amount:.2f} saved ({progress:.0%} complete)")
         st.progress(progress)
@@ -205,5 +201,5 @@ if st.button("Show Snapshot"):
     st.write("#### Retirement Savings")
     st.write(f"${retirement_net_worth:,.2f}")
 
-    # Plot timeline with the selected snapshot year
-    plot_timeline(snapshot_year)
+# Plot timeline with current state
+plot_timeline()
