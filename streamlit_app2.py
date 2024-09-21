@@ -179,11 +179,11 @@ if st.button("Show Snapshot"):
     retirement_net_worth = calculate_retirement_net_worth_with_goals()
     
     # Create a summary without headers
-    st.markdown(f"${int(monthly_income)}")
-    st.markdown(f"${int(monthly_expenses)}")
+    st.markdown(f"Monthly income: ${int(monthly_income)}")
+    st.markdown(f"Monthly expenses: ${int(monthly_expenses)}")
     for goal in st.session_state.goals:
         st.markdown(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
-    st.markdown(f"To Retirement: ${int(contributions)}")
+    st.markdown(f"- Retirement: ${int(contributions)}")
 
     st.write("#### Goals")
     total_retirement_savings = 0
