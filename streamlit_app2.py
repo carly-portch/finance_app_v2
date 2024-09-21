@@ -80,32 +80,21 @@ def calculate_retirement_net_worth_without_goals():
 
     return retirement_net_worth
 
-# Function to calculate retirement net worth with goals (updated with loop)
+# Function to calculate retirement net worth with goals
 def calculate_retirement_net_worth_with_goals():
-    current_year = date.today().year
-    total_retirement_savings = 0
-    current_savings = 0
-    rate_of_return_monthly = rate_of_return / 100 / 12
-    
-    # Loop through each year until retirement
-    for year in range(current_year, retirement_year + 1):
-        # Calculate how much should be contributed to retirement this year
-        monthly_savings = monthly_income - monthly_expenses
-        
-        # Subtract goal contributions if the goal has not yet been reached
-        for goal in st.session_state.goals:
-            if year <= goal['target_year']:  # Only deduct contributions before the goal year
-                monthly_savings -= goal['monthly_contribution']
-        
-        # Calculate monthly compound interest for the year
-        if rate_of_return_monthly > 0:
-            current_savings += monthly_savings * ((1 + rate_of_return_monthly) ** 12 - 1) / rate_of_return_monthly
-        else:
-            current_savings += monthly_savings * 12
-        
-        total_retirement_savings = current_savings
+    remaining_contributions = monthly_income - monthly_expenses
+    for goal in st.session_state.goals:
+        remaining_contributions -= goal['monthly_contribution']
 
-    return total_retirement_savings
+    months_to_retirement = (retirement_year - date.today().year) * 12
+    rate_of_return_monthly = rate_of_return / 100 / 12
+
+    if rate_of_return_monthly > 0:
+        retirement_net_worth = remaining_contributions * ((1 + rate_of_return_monthly) ** months_to_retirement - 1) / rate_of_return_monthly
+    else:
+        retirement_net_worth = remaining_contributions * months_to_retirement
+
+    return retirement_net_worth
 
 # Plot timeline
 def plot_timeline():
