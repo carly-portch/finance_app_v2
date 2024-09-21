@@ -178,14 +178,14 @@ if st.button("Show Snapshot"):
     retirement_net_worth = calculate_retirement_net_worth_with_goals()
     
     # Create a summary table
-    st.write(f"- Monthly income: ${int(monthly_income)}")
-    st.write(f"- Monthly expenses: ${int(monthly_expenses)}")
+    st.write(f"Monthly income: ${int(monthly_income)}")
+    st.write(f"Monthly expenses: ${int(monthly_expenses)}")
     
     st.write(f"Contributions:")
     for goal in st.session_state.goals:
         st.write(f"- {goal['goal_name']}: ${int(goal['monthly_contribution'])}")
 
-    st.write(f"- Retirement: ${int(contributions)}")
+    st.write(f"Retirement: ${int(contributions)}")
 
     st.write("#### Goals")
     for goal in st.session_state.goals:
