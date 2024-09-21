@@ -20,8 +20,6 @@ rate_of_return = st.number_input("Rate of return or interest rate (%) for retire
 # Initialize goal list
 if 'goals' not in st.session_state:
     st.session_state.goals = []
-if 'snapshot_year' not in st.session_state:
-    st.session_state.snapshot_year = None
 
 # Display goal addition dropdown
 with st.expander("Add a Goal"):
@@ -98,7 +96,10 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline():
+def plot_timeline(snapshot_year=None):
+    current_year = date.today().year
+    
+    # Create timeline data
     timeline_data = {
         'Year': [current_year, retirement_year] + [goal['target_year'] for goal in st.session_state.goals],
         'Event': ['Current Year', 'Retirement Year'] + [goal['goal_name'] for goal in st.session_state.goals],
@@ -136,9 +137,9 @@ def plot_timeline():
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year if it exists
-    if st.session_state.snapshot_year is not None:
-        fig.add_vline(x=st.session_state.snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add a vertical line for the selected snapshot year if provided
+    if snapshot_year is not None:
+        fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -177,19 +178,12 @@ if st.button("Show Snapshot"):
     
     retirement_net_worth = calculate_retirement_net_worth_with_goals()
     
-    # Create a summary table
-    st.write("#### Current Monthly Income")
-    st.write(f"${monthly_income:,.2f}")
-
-    st.write("#### Current Monthly Expenses")
-    st.write(f"${monthly_expenses:,.2f}")
-
-    st.write("#### Contributions")
-    st.write("**To Goals:**")
+    # Create a summary without headers
+    st.markdown(f"${monthly_income:,.2f}")
+    st.markdown(f"${monthly_expenses:,.2f}")
     for goal in st.session_state.goals:
-        st.write(f"- {goal['goal_name']}: ${goal['monthly_contribution']:.2f}")
-
-    st.write(f"**To Retirement:** ${contributions:.2f}")
+        st.markdown(f"- {goal['goal_name']}: ${goal['monthly_contribution']:.2f}")
+    st.markdown(f"To Retirement: ${contributions:.2f}")
 
     st.write("#### Goals")
     for goal in st.session_state.goals:
@@ -202,4 +196,4 @@ if st.button("Show Snapshot"):
     st.write(f"${retirement_net_worth:,.2f}")
 
 # Plot timeline with current state
-plot_timeline()
+plot_timeline(st.session_state.get("snapshot_year"))
