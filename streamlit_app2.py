@@ -96,7 +96,7 @@ def calculate_retirement_net_worth_with_goals():
     return retirement_net_worth
 
 # Plot timeline
-def plot_timeline(selected_year):
+def plot_timeline(snapshot_year=None):
     current_year = date.today().year
     
     # Create timeline data
@@ -137,8 +137,9 @@ def plot_timeline(selected_year):
         line=dict(color='red', width=2)
     ))
 
-    # Add a vertical line for the selected snapshot year
-    fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
+    # Add a vertical line for the selected snapshot year if provided
+    if snapshot_year is not None:
+        fig.add_vline(x=snapshot_year, line_color="blue", line_width=2, annotation_text="Snapshot Year", annotation_position="top right")
     
     # Update layout
     fig.update_layout(
@@ -166,6 +167,9 @@ if st.sidebar.button("Remove Goal"):
 
 # Calculate and display the financial snapshot
 snapshot_year = st.number_input("Enter a year to view financial snapshot", min_value=current_year, max_value=retirement_year)
+
+# Plot timeline without the snapshot line initially
+plot_timeline()
 
 if st.button("Show Snapshot"):
     st.markdown("### Financial Snapshot")
