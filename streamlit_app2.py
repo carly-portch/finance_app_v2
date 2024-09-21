@@ -209,9 +209,16 @@ def calculate_financial_snapshot(year):
     else:
         retirement_savings = remaining_contributions * months_elapsed
 
+    # Prevent division by zero in retirement savings percentage calculation
+    net_worth_without_goals = calculate_retirement_net_worth_without_goals()
+    if net_worth_without_goals == 0:
+        percent_saved_retirement = 0
+    else:
+        percent_saved_retirement = (retirement_savings / net_worth_without_goals) * 100
+
     snapshot['Retirement'] = {
         'Saved Amount ($)': retirement_savings,
-        'Saved (%)': (retirement_savings / calculate_retirement_net_worth_without_goals()) * 100
+        'Saved (%)': percent_saved_retirement
     }
 
     snapshot['Monthly Income'] = monthly_income
@@ -221,12 +228,4 @@ def calculate_financial_snapshot(year):
 
     return snapshot
 
-# Display the financial snapshot table
-if selected_year:
-    snapshot = calculate_financial_snapshot(selected_year)
-    st.subheader(f"Financial Snapshot for the Year {selected_year}")
-    
-    # Convert the snapshot dictionary to a DataFrame for better display
-    snapshot_df = pd.DataFrame(snapshot).T
-    st.table(snapshot_df)
 
